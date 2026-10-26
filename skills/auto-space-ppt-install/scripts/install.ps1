@@ -65,8 +65,8 @@ function Save-Config {
 # ---------- 0. 参数校验 ----------
 $url = ""
 if (-not $SourceZip) {
-  if ($Repo -eq "lruihuan67-coder/auto-space-ppt-skill" -or [string]::IsNullOrWhiteSpace($Repo)) {
-    throw "未配置仓库地址。请使用 -Repo <owner>/<repo> 指定，或改用 -SourceZip 指定本地压缩包。"
+  if ([string]::IsNullOrWhiteSpace($Repo) -or $Repo -notmatch "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$") {
+    throw "仓库地址无效：'$Repo'。请使用 -Repo <owner>/<repo> 指定，或改用 -SourceZip 指定本地压缩包。"
   }
   $url = "https://raw.githubusercontent.com/$Repo/$Ref/$AssetName"
 }
