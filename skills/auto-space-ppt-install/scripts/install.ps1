@@ -14,7 +14,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$Repo = "__GITHUB_REPO__",
+  [string]$Repo = "lruihuan67-coder/auto-space-ppt-skill",
   [string]$Ref = "main",
   [string]$AssetName = "auto-space-ppt-skill.zip",
   [string]$SkillName = "auto-space-ppt",
@@ -65,7 +65,7 @@ function Save-Config {
 # ---------- 0. 参数校验 ----------
 $url = ""
 if (-not $SourceZip) {
-  if ($Repo -eq "__GITHUB_REPO__" -or [string]::IsNullOrWhiteSpace($Repo)) {
+  if ($Repo -eq "lruihuan67-coder/auto-space-ppt-skill" -or [string]::IsNullOrWhiteSpace($Repo)) {
     throw "未配置仓库地址。请使用 -Repo <owner>/<repo> 指定，或改用 -SourceZip 指定本地压缩包。"
   }
   $url = "https://raw.githubusercontent.com/$Repo/$Ref/$AssetName"

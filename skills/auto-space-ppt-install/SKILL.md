@@ -34,8 +34,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\sk
 $dir = "$env:USERPROFILE\.agents\skills\auto-space-ppt-install"
 New-Item -ItemType Directory -Path "$dir\scripts" -Force | Out-Null
 
-# 2. 取安装脚本（把 <owner> 换成实际 GitHub 用户/组织）
-$repo = "<owner>/auto-space-ppt-skill"
+# 2. 取安装脚本（把 lruihuan67-coder 换成实际 GitHub 用户/组织）
+$repo = "lruihuan67-coder/auto-space-ppt-skill"
 Invoke-WebRequest "https://raw.githubusercontent.com/$repo/main/skills/auto-space-ppt-install/scripts/install.ps1" -OutFile "$dir\scripts\install.ps1"
 Invoke-WebRequest "https://raw.githubusercontent.com/$repo/main/skills/auto-space-ppt-install/scripts/daily-sync.ps1" -OutFile "$dir\scripts\daily-sync.ps1"
 

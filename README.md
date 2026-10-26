@@ -13,7 +13,7 @@
 ## 安装（PowerShell）
 
 ```powershell
-$repo = "<owner>/auto-space-ppt-skill"
+$repo = "lruihuan67-coder/auto-space-ppt-skill"
 $dir  = "$env:USERPROFILE\.agents\skills\auto-space-ppt-install"
 New-Item -ItemType Directory -Path "$dir\scripts" -Force | Out-Null
 Invoke-WebRequest "https://raw.githubusercontent.com/$repo/main/skills/auto-space-ppt-install/scripts/install.ps1"     -OutFile "$dir\scripts\install.ps1"
