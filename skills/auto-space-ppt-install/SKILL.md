@@ -7,22 +7,17 @@ description: 凹凸-PPT 技能索引与安装器。从 GitHub 下载凹凸时空
 
 本 skill 是「凹凸-PPT」能力的入口：它不生产 PPT，而是负责把真正的制作技能
 `auto-space-ppt`（凹凸时空品牌演示稿）从 GitHub 取到本地并保持最新。
+它只负责演示稿技能；UI 组件库技能由 `auto-space-ui-design-install` 单独安装与同步。
 
 | 资源 | 位置 |
 | --- | --- |
-| PPT 技能压缩包 | `<repo>/auto-space-ppt-skill.zip`（分支 `main`） |
-| UI 技能压缩包 | `<repo>/auto-space-ui-design-skill.zip`（分支 `main`） |
+| 技能压缩包 | `<repo>/auto-space-ppt-skill.zip`（分支 `main`） |
 | 制作技能 | `auto-space-ppt`（安装后位于 `~/.agents/skills/auto-space-ppt`） |
-| UI 设计技能 | `auto-space-ui-design`（安装后位于 `~/.agents/skills/auto-space-ui-design`） |
 | 智能体模板 | `<repo>/skills/auto-space-ppt-install/agent/凹凸-PPT.md` |
 | 安装脚本 | `skills/auto-space-ppt-install/scripts/install.ps1` |
 | 每日同步脚本 | `skills/auto-space-ppt-install/scripts/daily-sync.ps1` |
 
-安装器支持多技能：每次安装会把技能按名字登记进 `config.json` 的 `skills` 数组，
-每日同步任务会遍历该数组逐一拉取更新。
-
-仓库默认值写在 `scripts/install.ps1` 的 `-Repo` 参数里（形如 `owner/auto-space-ppt-skill`）；
-如未写入，调用时显式传 `-Repo`。
+仓库默认值写在 `scripts/install.ps1` 的 `-Repo` 参数里（`lruihuan67-coder/auto-space-ppt-skill`）。
 
 ## 一键安装 / 更新（推荐）
 
@@ -39,16 +34,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\sk
 $dir = "$env:USERPROFILE\.agents\skills\auto-space-ppt-install"
 New-Item -ItemType Directory -Path "$dir\scripts" -Force | Out-Null
 
-# 2. 取安装脚本（把 lruihuan67-coder 换成实际 GitHub 用户/组织）
+# 2. 取安装脚本
 $repo = "lruihuan67-coder/auto-space-ppt-skill"
 Invoke-WebRequest "https://raw.githubusercontent.com/$repo/main/skills/auto-space-ppt-install/scripts/install.ps1" -OutFile "$dir\scripts\install.ps1"
 Invoke-WebRequest "https://raw.githubusercontent.com/$repo/main/skills/auto-space-ppt-install/scripts/daily-sync.ps1" -OutFile "$dir\scripts\daily-sync.ps1"
 
 # 3. 安装技能 + 智能体 + 每日同步
 powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\scripts\install.ps1" -Repo $repo -WithAgent -WithSchedule -ScheduleTime 09:00
-
-# 追加安装 UI 设计技能（auto-space-ui-design）
-powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\scripts\install.ps1" -Repo $repo -SkillName auto-space-ui-design -AssetName auto-space-ui-design-skill.zip
 ```
 
 安装脚本参数：
@@ -57,11 +49,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\scripts\install.ps1" -
 | --- | --- | --- |
 | `-Repo` | 脚本内置 | GitHub 仓库，`owner/repo` |
 | `-Ref` | `main` | 分支或 tag |
+| `-SkillName` | `auto-space-ppt` | 安装的技能目录名 |
+| `-AssetName` | `auto-space-ppt-skill.zip` | 压缩包文件名 |
 | `-SkillHome` | `~/.agents/skills` | 技能落地目录 |
 | `-AgentDir` | `./.opencode/agent` | 智能体文件目录（配合 `-WithAgent`） |
 | `-WithAgent` | 关 | 部署「凹凸-PPT」智能体 |
 | `-WithSchedule` | 关 | 注册每天自动同步（任务名 `AutoSpacePPT-SkillSync`） |
 | `-ScheduleTime` | `09:00` | 每日同步时间 |
+| `-TaskName` | `AutoSpacePPT-SkillSync` | 计划任务名 |
 | `-Force` | 关 | 忽略哈希比对，强制重装 |
 
 ## 脚本行为
@@ -70,9 +65,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\scripts\install.ps1" -
 2. 计算 SHA256，与 `installed.json` 比对；一致则跳过（`-Force` 可强制）。
 3. 解压校验必须存在 `auto-space-ppt/SKILL.md`。
 4. 旧版本移动到 `<SkillHome>/.backup/auto-space-ppt-<时间戳>`，再复制新版本。
-5. 写入 `installed.json`（repo / ref / sha256 / 时间）。
+5. 写入 `installed.json`（repo / ref / sha256 / 时间）与 `config.json`（只登记本技能）。
 6. 可选：复制 `agent/凹凸-PPT.md` 到智能体目录。
-7. 可选：注册 `schtasks` 每日任务，并把 repo 等参数写入 `config.json` 供同步脚本读取。
+7. 可选：注册 `schtasks` 每日任务 `AutoSpacePPT-SkillSync`。
 
 日志：`<InstallerDir>/logs/install-YYYY-MM.log`、`daily-sync.log`。
 
@@ -90,7 +85,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\scripts\install.ps1" -
 ## 每日自动同步
 
 注册后任务 `AutoSpacePPT-SkillSync` 每天在指定时间调用 `daily-sync.ps1`：
-读取 `config.json` → 调用 `install.ps1` → 有更新才替换技能目录 → 写日志。
+读取本目录 `config.json` → 调用 `install.ps1` → 有更新才替换技能目录 → 写日志。
 
 常用命令：
 
@@ -105,9 +100,7 @@ Get-Content "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\logs\daily-s
 
 ```powershell
 Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ppt\SKILL.md"
-Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ui-design\SKILL.md"
 Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ppt\assets\starter.zip"
-Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ui-design\assets\ui-starter\package.json"
 Get-Content  "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\installed.json"
 ```
 

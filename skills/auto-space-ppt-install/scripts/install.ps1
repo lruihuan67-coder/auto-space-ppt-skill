@@ -23,6 +23,7 @@ param(
   [switch]$WithAgent,
   [switch]$WithSchedule,
   [string]$ScheduleTime = "09:00",
+  [string]$TaskName = "AutoSpacePPT-SkillSync",
   [string]$SourceZip,
   [switch]$Force,
   [switch]$Quiet
@@ -57,29 +58,13 @@ function Get-RemoteZip {
 }
 
 function Save-Config {
-  # 把当前技能按名字合并进 config.json 的 skills 数组（支持多技能共存）
+  # 每个安装器只登记自己负责的那一个技能
   param([hashtable]$Data)
   $path = Join-Path $InstallerDir "config.json"
-  $entry = [ordered]@{
-    skillName = $Data.skillName; asset = $Data.asset; sha256 = $Data.sha256
-  }
-  $skills = @()
-  if (Test-Path -LiteralPath $path) {
-    try {
-      $old = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
-      if ($old.skills) {
-        $skills = @($old.skills)
-      } elseif ($old.skillName -and $old.asset) {
-        # 兼容旧单技能格式，迁移进数组
-        $skills = @([pscustomobject]@{ skillName = $old.skillName; asset = $old.asset })
-      }
-    } catch { }
-  }
-  $skills = @($skills | Where-Object { $_.skillName -ne $Data.skillName })
-  $skills += [pscustomobject]$entry
   $cfg = [ordered]@{
     repo = $Data.repo; ref = $Data.ref; skillHome = $Data.skillHome
-    schedule = $Data.schedule; skills = $skills
+    schedule = $Data.schedule; skillName = $Data.skillName
+    asset = $Data.asset; sha256 = $Data.sha256
   }
   ($cfg | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $path -Encoding UTF8
 }
@@ -196,7 +181,7 @@ try {
     if (-not (Test-Path -LiteralPath $dailySync)) {
       Write-Log "未找到 $dailySync，跳过计划任务注册" "WARN"
     } else {
-      $taskName = "AutoSpacePPT-SkillSync"
+      $taskName = $TaskName
       $arg = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$dailySync`""
       schtasks.exe /Create /TN $taskName /TR "powershell.exe $arg" /SC DAILY /ST $ScheduleTime /F | Out-Null
       if ($LASTEXITCODE -eq 0) {
