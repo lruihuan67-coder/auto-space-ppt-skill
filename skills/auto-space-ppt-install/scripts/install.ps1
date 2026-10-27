@@ -67,9 +67,15 @@ function Save-Config {
   if (Test-Path -LiteralPath $path) {
     try {
       $old = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
-      if ($old.skills) { $skills = @($old.skills | Where-Object { $_.skillName -ne $Data.skillName }) }
+      if ($old.skills) {
+        $skills = @($old.skills)
+      } elseif ($old.skillName -and $old.asset) {
+        # 兼容旧单技能格式，迁移进数组
+        $skills = @([pscustomobject]@{ skillName = $old.skillName; asset = $old.asset })
+      }
     } catch { }
   }
+  $skills = @($skills | Where-Object { $_.skillName -ne $Data.skillName })
   $skills += [pscustomobject]$entry
   $cfg = [ordered]@{
     repo = $Data.repo; ref = $Data.ref; skillHome = $Data.skillHome
