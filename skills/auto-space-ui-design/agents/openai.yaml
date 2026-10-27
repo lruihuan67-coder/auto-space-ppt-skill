@@ -1,0 +1,5 @@
+interface:
+  display_name: "凹凸时空 UI 出图"
+  short_description: "从零搭建品牌界面，或规范化已有前端 UI"
+  brand_color: "#0D7CFD"
+  default_prompt: "使用 $auto-space-ui-design 按凹凸时空组件规范搭建新界面，或优化我已有的前端页面。"

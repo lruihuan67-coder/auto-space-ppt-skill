@@ -10,11 +10,16 @@ description: 凹凸-PPT 技能索引与安装器。从 GitHub 下载凹凸时空
 
 | 资源 | 位置 |
 | --- | --- |
-| 技能压缩包 | `<repo>/auto-space-ppt-skill.zip`（分支 `main`） |
+| PPT 技能压缩包 | `<repo>/auto-space-ppt-skill.zip`（分支 `main`） |
+| UI 技能压缩包 | `<repo>/auto-space-ui-design-skill.zip`（分支 `main`） |
 | 制作技能 | `auto-space-ppt`（安装后位于 `~/.agents/skills/auto-space-ppt`） |
+| UI 设计技能 | `auto-space-ui-design`（安装后位于 `~/.agents/skills/auto-space-ui-design`） |
 | 智能体模板 | `<repo>/skills/auto-space-ppt-install/agent/凹凸-PPT.md` |
 | 安装脚本 | `skills/auto-space-ppt-install/scripts/install.ps1` |
 | 每日同步脚本 | `skills/auto-space-ppt-install/scripts/daily-sync.ps1` |
+
+安装器支持多技能：每次安装会把技能按名字登记进 `config.json` 的 `skills` 数组，
+每日同步任务会遍历该数组逐一拉取更新。
 
 仓库默认值写在 `scripts/install.ps1` 的 `-Repo` 参数里（形如 `owner/auto-space-ppt-skill`）；
 如未写入，调用时显式传 `-Repo`。
@@ -41,6 +46,9 @@ Invoke-WebRequest "https://raw.githubusercontent.com/$repo/main/skills/auto-spac
 
 # 3. 安装技能 + 智能体 + 每日同步
 powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\scripts\install.ps1" -Repo $repo -WithAgent -WithSchedule -ScheduleTime 09:00
+
+# 追加安装 UI 设计技能（auto-space-ui-design）
+powershell -NoProfile -ExecutionPolicy Bypass -File "$dir\scripts\install.ps1" -Repo $repo -SkillName auto-space-ui-design -AssetName auto-space-ui-design-skill.zip
 ```
 
 安装脚本参数：
@@ -97,7 +105,9 @@ Get-Content "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\logs\daily-s
 
 ```powershell
 Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ppt\SKILL.md"
+Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ui-design\SKILL.md"
 Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ppt\assets\starter.zip"
+Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ui-design\assets\ui-starter\package.json"
 Get-Content  "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\installed.json"
 ```
 

@@ -57,9 +57,25 @@ function Get-RemoteZip {
 }
 
 function Save-Config {
+  # 把当前技能按名字合并进 config.json 的 skills 数组（支持多技能共存）
   param([hashtable]$Data)
   $path = Join-Path $InstallerDir "config.json"
-  $Data | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $path -Encoding UTF8
+  $entry = [ordered]@{
+    skillName = $Data.skillName; asset = $Data.asset; sha256 = $Data.sha256
+  }
+  $skills = @()
+  if (Test-Path -LiteralPath $path) {
+    try {
+      $old = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+      if ($old.skills) { $skills = @($old.skills | Where-Object { $_.skillName -ne $Data.skillName }) }
+    } catch { }
+  }
+  $skills += [pscustomobject]$entry
+  $cfg = [ordered]@{
+    repo = $Data.repo; ref = $Data.ref; skillHome = $Data.skillHome
+    schedule = $Data.schedule; skills = $skills
+  }
+  ($cfg | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $path -Encoding UTF8
 }
 
 # ---------- 0. 参数校验 ----------
@@ -186,8 +202,8 @@ try {
   }
 
   Save-Config @{
-    repo = $Repo; ref = $Ref; asset = $AssetName; skillName = $SkillName
-    skillHome = $SkillHome; schedule = $ScheduleTime
+    repo = $Repo; ref = $Ref; skillName = $SkillName; asset = $AssetName
+    sha256 = $hash; skillHome = $SkillHome; schedule = $ScheduleTime
   }
   Write-Log "同步配置写入 $(Join-Path $InstallerDir 'config.json')"
 
