@@ -50,12 +50,21 @@ def iter_files(root: Path):
             yield path, path.relative_to(root)
 
 
+def write_entry(archive: zipfile.ZipFile, path: Path, arcname: str) -> None:
+    """Fixed timestamps keep the archive hash stable when the content is unchanged,
+    so installed machines only reinstall when something actually changed."""
+    info = zipfile.ZipInfo(arcname, date_time=(1980, 1, 1, 0, 0, 0))
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.external_attr = 0o644 << 16
+    archive.writestr(info, path.read_bytes())
+
+
 def build_starter(deck: Path, target: Path) -> int:
     entries = list(iter_files(deck))
     target.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         for path, rel in entries:
-            archive.write(path, rel.as_posix())
+            write_entry(archive, path, rel.as_posix())
     print(f"starter.zip 重建完成：{len(entries)} 个文件，{target.stat().st_size / (1 << 20):.1f} MB")
     return len(entries)
 
@@ -82,7 +91,7 @@ def build_skill_zip(skill_dir: Path, output: Path) -> int:
         raise RuntimeError(f"{skill_dir} 缺少 SKILL.md，无法发布")
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for path, rel in entries:
-            archive.write(path, f"{skill_dir.name}/{rel.as_posix()}")
+            write_entry(archive, path, f"{skill_dir.name}/{rel.as_posix()}")
     print(f"技能包重建完成：{len(entries)} 个文件，{output.stat().st_size / (1 << 20):.1f} MB")
     return len(entries)
 
@@ -92,11 +101,14 @@ def git(repo: Path, *args: str, capture: bool = False) -> subprocess.CompletedPr
 
 
 def publish(repo: Path, zip_name: str, message: str | None, digest: str) -> None:
-    git(repo, "add", "--", zip_name, "skills")
+    git(repo, "add", "-A")
     staged = git(repo, "status", "--porcelain", capture=True).stdout.strip()
     if not staged:
         print("仓库没有变更，跳过提交")
         return
+    print("本次提交包含：")
+    for line in staged.splitlines():
+        print(f"  {line}")
     git(repo, "commit", "-m", message or f"chore: publish {zip_name} ({digest[:12]})")
     git(repo, "push", "origin", "HEAD")
     print("已提交并推送到 origin")

@@ -113,6 +113,8 @@ python scripts/release.py --push -m "feat: add gallery layout"
 
 它会依次：按演示稿工程重打 `assets/starter.zip` → 把本地技能源同步进 `skills/auto-space-ppt/` → 重打 `auto-space-ppt-skill.zip` → 提交并推送，并打印新压缩包的 SHA256。
 
+打包使用固定时间戳，**内容没变时哈希不变**，所以重跑发布不会让各机器白下载一遍；只有真的改了模板或文档，哈希才会变。
+
 | 常用参数 | 作用 |
 | --- | --- |
 | `--push` | 提交并推送到 origin（不加只构建不推送） |
