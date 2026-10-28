@@ -179,7 +179,7 @@ function ComponentPage({ onOpenDialog }: { onOpenDialog: () => void }) {
           </Card>
         </div>
         <div className="mt-5 grid gap-5 lg:grid-cols-3">
-          <EmptyState icon={<Search size={30} />} title="暂无检索结果" description="试试更宽泛的关键词，或先为知识库添加文档。" action={<Button size="sm">添加文档</Button>} />
+          <EmptyState icon={<Search size={24} />} title="暂无检索结果" description="试试更宽泛的关键词，或先为知识库添加文档。" action={<Button size="sm">添加文档</Button>} />
           <Card><CardTitle>进度 Progress</CardTitle><CardContent className="space-y-6"><Progress value={68} label="文档解析" showValue /><Progress value={34} label="模型评估" showValue /></CardContent></Card>
           <Card><CardTitle>加载 Skeleton</CardTitle><CardContent className="space-y-3"><Skeleton className="h-5 w-2/3" /><Skeleton /><Skeleton className="w-4/5" /></CardContent></Card>
         </div>
@@ -205,10 +205,10 @@ function DashboardPage() {
         <Button leftIcon={<Sparkles size={16} />}>创建 AI 任务</Button>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="运行中任务" value="08" detail="示例数据 · 当前批次" icon={<Activity size={20} />} />
-        <MetricCard label="已接入知识库" value="12" detail="示例数据 · 可复用资源" accent="sky" icon={<Database size={20} />} />
-        <MetricCard label="待处理提醒" value="03" detail="示例数据 · 需人工确认" accent="orange" icon={<CircleHelp size={20} />} />
-        <MetricCard label="已完成流程" value="24" detail="示例数据 · 本期汇总" accent="yellow" icon={<Check size={20} />} />
+        <MetricCard label="运行中任务" value="08" detail="示例数据 · 当前批次" icon={<Activity size={24} />} />
+        <MetricCard label="已接入知识库" value="12" detail="示例数据 · 可复用资源" accent="sky" icon={<Database size={24} />} />
+        <MetricCard label="待处理提醒" value="03" detail="示例数据 · 需人工确认" accent="orange" icon={<CircleHelp size={24} />} />
+        <MetricCard label="已完成流程" value="24" detail="示例数据 · 本期汇总" accent="yellow" icon={<Check size={24} />} />
       </div>
       <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
         <Card>
@@ -245,9 +245,9 @@ function MarketingPage() {
         <SectionTitle number="CAPABILITY MODULES" title="能力介绍模块" description="卡片用于清晰表达能力边界，不依赖华丽装饰。" />
         <div className="grid gap-5 md:grid-cols-3">
           {[
-            { icon: <Factory size={25} />, label: "工业场景", title: "从业务问题出发", body: "围绕真实业务流程识别 AI 可落地的环节，让方案与生产和运营场景紧密结合。", color: "#245CB5" },
-            { icon: <Database size={25} />, label: "数据与知识", title: "让信息形成能力", body: "通过数据处理与知识组织，为智能检索、分析和辅助决策提供基础。", color: "#00AAFF" },
-            { icon: <Workflow size={25} />, label: "交付流程", title: "从研发到场景应用", body: "以可验证、可迭代的流程推进方案设计、实施与持续优化。", color: "#F74C25" },
+            { icon: <Factory size={24} />, label: "工业场景", title: "从业务问题出发", body: "围绕真实业务流程识别 AI 可落地的环节，让方案与生产和运营场景紧密结合。", color: "#245CB5" },
+            { icon: <Database size={24} />, label: "数据与知识", title: "让信息形成能力", body: "通过数据处理与知识组织，为智能检索、分析和辅助决策提供基础。", color: "#00AAFF" },
+            { icon: <Workflow size={24} />, label: "交付流程", title: "从研发到场景应用", body: "以可验证、可迭代的流程推进方案设计、实施与持续优化。", color: "#F74C25" },
           ].map((item) => (
             <Card key={item.title} className="min-h-64">
               <div className="mb-7 flex items-center justify-between"><span className="flex size-12 items-center justify-center rounded-xl bg-[var(--as-surface-alt)] text-[var(--as-primary)]">{item.icon}</span><span className="size-2.5 rounded-full" style={{ background: item.color }} /></div>
@@ -285,7 +285,7 @@ export default function App() {
         </div>
         <nav aria-label="组件库导航" className="space-y-1 px-3 py-7">
           <p className="px-4 pb-3 text-xs font-medium text-[var(--as-muted)]">设计资源</p>
-          {views.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? "page" : undefined} className={cn("flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors", view === item.id ? "bg-[var(--as-surface-alt)] text-[var(--as-primary)]" : "text-[var(--as-muted)] hover:bg-[var(--as-surface-alt)] hover:text-[var(--as-text)]")}><item.icon size={18} />{item.label}</button>)}
+          {views.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? "page" : undefined} className={cn("flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors", view === item.id ? "bg-[var(--as-surface-alt)] text-[var(--as-primary)]" : "text-[var(--as-muted)] hover:bg-[var(--as-surface-alt)] hover:text-[var(--as-text)]")}><item.icon size={16} />{item.label}</button>)}
         </nav>
         <div className="mt-auto border-t border-[var(--as-border)] p-5"><div className="rounded-xl bg-[var(--as-surface-alt)] p-4"><p className="text-sm font-semibold">一套规则，两类界面</p><p className="mt-2 text-xs leading-5 text-[var(--as-muted)]">企业 AI 产品与品牌传播共享色彩、字体和交互语言。</p></div></div>
       </aside>
@@ -293,7 +293,7 @@ export default function App() {
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex min-h-18 items-center justify-between gap-4 border-b border-[var(--as-border)] bg-[var(--as-surface)]/95 px-5 backdrop-blur sm:px-8">
           <div className="flex min-w-0 items-center gap-3"><img src={dark ? "/brand/wordmark-white.svg" : "/brand/wordmark-ink.svg"} alt="凹凸时空 AUTO SPACE" className="h-7 max-w-32 object-contain object-left lg:hidden" /><span className="hidden text-sm font-medium text-[var(--as-muted)] lg:inline">凹凸时空 / 组件规范</span><span className="hidden text-[var(--as-border)] lg:inline">/</span><span className="truncate text-sm font-semibold">{views.find((item) => item.id === view)?.label}</span></div>
-          <div className="flex items-center gap-2"><span className="hidden items-center gap-1.5 text-xs text-[var(--as-muted)] sm:flex"><ShieldCheck size={15} /> 设计与代码同步</span><Button variant="ghost" size="icon" aria-label={dark ? "切换到浅色主题" : "切换到深色主题"} onClick={() => setDark(!dark)}>{dark ? <Sun size={18} /> : <Moon size={18} />}</Button></div>
+          <div className="flex items-center gap-2"><span className="hidden items-center gap-1.5 text-xs text-[var(--as-muted)] sm:flex"><ShieldCheck size={16} /> 设计与代码同步</span><Button variant="ghost" size="icon" aria-label={dark ? "切换到浅色主题" : "切换到深色主题"} onClick={() => setDark(!dark)}>{dark ? <Sun size={16} /> : <Moon size={16} />}</Button></div>
         </header>
         <nav aria-label="移动端组件库导航" className="flex gap-2 overflow-x-auto border-b border-[var(--as-border)] bg-[var(--as-surface)] px-4 py-3 lg:hidden">{views.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? "page" : undefined} className={cn("shrink-0 rounded-lg px-3 py-2 text-sm", view === item.id ? "bg-[var(--as-primary)] text-white" : "text-[var(--as-muted)]")}>{item.label}</button>)}</nav>
         <main className="mx-auto max-w-[1480px] px-5 pt-8 sm:px-8 sm:pt-10">

@@ -179,6 +179,13 @@
     border-color: var(--border);
   }
 
+  /* 图标规范：Lucide，16 / 24 基准，1.5 描边 */
+  svg.lucide {
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
   html {
     color-scheme: light;
     font-family: var(--font-ui);
