@@ -28,9 +28,9 @@ from datetime import datetime
 from pathlib import Path
 
 DEFAULT_REPO = "lruihuan67-coder/auto-space-ppt-skill"
-DEFAULT_ASSET = "auto-space-ppt-skill.zip"
-DEFAULT_SKILL = "auto-space-ppt"
-DEFAULT_TASK = "AutoSpacePPT-SkillSync"
+DEFAULT_ASSET = "auto-space-ui-design-skill.zip"
+DEFAULT_SKILL = "auto-space-ui-design"
+DEFAULT_TASK = "AutoSpaceUI-SkillSync"
 USER_AGENT = "auto-space-skill-install"
 
 
@@ -201,6 +201,28 @@ def show_status(args, quiet: bool) -> int:
     return 0
 
 
+def fetch_text(url: str) -> str:
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return response.read().decode("utf-8", "replace")
+
+
+def remote_hash(repo: str, ref: str, asset: str) -> str | None:
+    """Read the tiny published hash file instead of downloading the whole archive."""
+    for url in (
+        f"https://raw.githubusercontent.com/{repo}/{ref}/{asset}.version",
+        f"https://github.com/{repo}/raw/{ref}/{asset}.version",
+    ):
+        try:
+            for line in fetch_text(url).splitlines():
+                candidate = line.strip()
+                if re.fullmatch(r"[0-9A-Fa-f]{64}", candidate):
+                    return candidate.upper()
+        except Exception:  # noqa: BLE001 - try the fallback host, then give up
+            continue
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Install an Auto Space skill from a GitHub archive.")
     parser.add_argument("--repo", default=DEFAULT_REPO, help="owner/repo on GitHub")
@@ -216,6 +238,7 @@ def main() -> int:
     parser.add_argument("--source-zip", help="install from a local archive instead of GitHub")
     parser.add_argument("--force", action="store_true", help="reinstall even when the hash matches")
     parser.add_argument("--status", action="store_true", help="compare the installed version with GitHub")
+    parser.add_argument("--ensure", action="store_true", help="快速核对并只在有新版本时安装")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
 
@@ -223,14 +246,26 @@ def main() -> int:
     if args.status:
         return show_status(args, quiet)
 
+    skill_home = Path(args.skill_home).expanduser()
+    skill_target = skill_home / args.skill_name
+
+    if args.ensure and not args.source_zip:
+        state = read_json(installer_dir() / "installed.json")
+        latest = remote_hash(args.repo, args.ref, args.asset)
+        if latest is None:
+            log("无法获取远端版本（离线或网络受限），按本机现有版本继续", "WARN", quiet)
+            return 0
+        if latest == (state.get("sha256") or "").upper() and (skill_target / "SKILL.md").is_file():
+            print("技能已是最新，无需更新")
+            return 0
+        log("发现新版本，开始更新", quiet=quiet)
+
     url = ""
     if not args.source_zip:
         if not re.fullmatch(r"[A-Za-z0-9._-]+/[A-Za-z0-9._-]+", args.repo or ""):
             parser.error("仓库地址无效，请使用 --repo <owner>/<repo> 或改用 --source-zip")
         url = f"https://raw.githubusercontent.com/{args.repo}/{args.ref}/{args.asset}"
 
-    skill_home = Path(args.skill_home).expanduser()
-    skill_target = skill_home / args.skill_name
     state_file = installer_dir() / "installed.json"
     log(f"仓库：{args.repo}  分支：{args.ref}  技能目录：{skill_target}", quiet=quiet)
 

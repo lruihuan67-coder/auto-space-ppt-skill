@@ -76,6 +76,23 @@ macOS 侧注册的是 `~/Library/LaunchAgents/com.auto-space.auto-space-ppt.sync
 | `-TaskName` / `--task-name` | `AutoSpacePPT-SkillSync` | 计划任务名 |
 | `-Force` / `--force` | 关 | 忽略哈希比对，强制重装 |
 | `-Status` / `--status` | 关 | 只比对本机与远端版本，不安装 |
+| `-Ensure` / `--ensure` | 关 | 开工前快速自检：只拉几十字节的版本清单，有新版才下载安装 |
+
+## 开工前自检（推荐）
+
+```powershell
+# Windows：约 1 秒，无新版时不会下载 12 MB 压缩包
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\scripts\install.ps1" -Ensure
+```
+
+```bash
+# macOS
+bash "$HOME/.agents/skills/auto-space-ppt-install/scripts/install.sh" --ensure
+```
+
+它读取仓库根目录的 `auto-space-ppt-skill.zip.version`（仅一行 SHA256）与本机 `installed.json` 比对：
+一致则打印“技能已是最新，无需更新”并立即返回；不一致才走完整安装。离线时打印告警并以本机版本继续。
+制作技能 `auto-space-ppt` 的“起稿”第 0 步已强制要求执行本自检，因此**每次开工都基于最新模板**。
 
 ## 脚本行为
 

@@ -70,6 +70,7 @@ macOS 注册的是 `~/Library/LaunchAgents/com.auto-space.auto-space-ui-design.s
 | `-TaskName` / `--task-name` | `AutoSpaceUI-SkillSync` | 计划任务名 |
 | `-Force` / `--force` | 关 | 忽略哈希比对，强制重装 |
 | `-Status` / `--status` | 关 | 只比对本机与远端版本，不安装 |
+| `-Ensure` / `--ensure` | 关 | 开工前快速自检：只拉几十字节版本清单，有新版才下载安装 |
 
 本安装器不部署智能体；UI 技能由当前对话直接按需加载使用。
 

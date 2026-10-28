@@ -197,6 +197,10 @@ def main() -> int:
     archive = repo / f"{args.skill_name}-skill.zip"
     build_skill_zip(skill_dir, archive)
     digest = sha256(archive)
+    # Tiny manifest so installed machines can compare versions without pulling 12 MB.
+    manifest = archive.with_name(archive.name + ".version")
+    manifest.write_text(digest + "\n", encoding="utf-8")
+    print(f"发布清单：{manifest.name}（{digest[:12]}）")
     print(f"SHA256：{digest}")
     print(f"发布时间：{datetime.now():%Y-%m-%d %H:%M:%S}")
 

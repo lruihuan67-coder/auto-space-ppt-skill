@@ -9,6 +9,10 @@ description: 基于凹凸时空 AUTO SPACE 的 45 种 React 演示版式，将�
 
 ## 起稿
 
+0. **开工前先核对版本**：运行一次安装器自检，确保用的是最新模板。
+   Windows：`powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\scripts\install.ps1" -Ensure`
+   macOS：`bash "$HOME/.agents/skills/auto-space-ppt-install/scripts/install.sh" --ensure`
+   提示“发现新版本，开始更新”时等它装完，并重新读取本技能再继续；提示无法联网时，按本机现有版本继续并向用户说明。
 1. 将用户内容整理为简短的内容清单：受众、场合、目标、必需信息、已核实的数据、图片/Logo、汇报人和日期。缺失但不影响设计的信息可用明确的占位标记继续；不要捏造业绩、客户或合作关系。
 2. 用 `python scripts/new_deck.py --output <新目录> --brief <内容文件>` 解包完整模板。若内容仅在对话里，先将其写成 UTF-8 Markdown 文件。可用 `--layouts cover,agenda,...` 预先选取和排序版式 ID；不传则保留全部 45 种作为素材库。
 3. 阅读新项目内的 `TEMPLATE_GUIDE.md`，按叙事顺序选择版式。ID 与选用建议见 [版式索引](references/layouts.md)。每张展示页都应承担清晰的信息任务；根据实际内容增删、复制和重排，不强求用完 45 种。

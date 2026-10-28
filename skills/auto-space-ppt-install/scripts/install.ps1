@@ -15,6 +15,7 @@ param(
   [string]$SourceZip,
   [switch]$Force,
   [switch]$Status,
+  [switch]$Ensure,
   [switch]$Quiet
 )
 
@@ -39,6 +40,7 @@ if ($WithSchedule) { $argv += "--with-schedule" }
 if ($SourceZip) { $argv += @("--source-zip", $SourceZip) }
 if ($Force) { $argv += "--force" }
 if ($Status) { $argv += "--status" }
+if ($Ensure) { $argv += "--ensure" }
 if ($Quiet) { $argv += "--quiet" }
 
 & $python.Source @argv

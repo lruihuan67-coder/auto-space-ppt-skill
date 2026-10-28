@@ -141,6 +141,30 @@ daily-sync（09:10）
 
 安装器自更新解决了“修复只落在新机器上”的问题：改 `install.py` 或任务注册逻辑，只需 push，已装机器第二天自动获得。
 
+## 使用时保证最新（--ensure）
+
+每日 09:10 的同步只能保证“最晚一天内”，笔记本合盖、关机还会更久。要保证**每次开工用的都是 GitHub 最新版**，在这一步加一次自检：
+
+```powershell
+# Windows
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\scripts\install.ps1" -Ensure
+```
+
+```bash
+# macOS
+bash "$HOME/.agents/skills/auto-space-ppt-install/scripts/install.sh" --ensure
+```
+
+它只请求仓库根目录的 `*.zip.version`（一行 SHA256，几十字节）：
+
+| 本机 vs 远端 | 行为 | 耗时 |
+| --- | --- | --- |
+| 一致 | 打印“技能已是最新，无需更新”，立即返回 | 约 1 秒 |
+| 不一致 | 自动下载并安装最新版 | 10～20 秒 |
+| 离线 | 打印告警，按本机版本继续 | 约 1 秒 |
+
+制作技能 `auto-space-ppt` 的“起稿”第 0 步已写死这一步，所以按该技能流程做事时，模板一定是发布过的最新版。
+
 ## 版本自检
 
 任意一台机器上执行一条命令，即可看到本机版本、远端版本、是否需要更新：
