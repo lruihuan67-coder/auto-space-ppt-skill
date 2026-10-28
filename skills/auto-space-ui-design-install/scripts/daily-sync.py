@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -80,43 +81,51 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def self_update(repo: str, ref: str) -> None:
-    """Replace local installer scripts with the repo versions when they differ."""
+def prepare_update(repo: str, ref: str) -> tuple[Path | None, list[str]]:
+    """Download the repo's installer scripts into a temp dir and validate them.
+
+    Nothing is written into the installed scripts directory here: the fresh copy
+    is executed for this run, and only applied afterwards, so a half-finished
+    download can never break the installer that is currently running.
+    """
     base = f"https://raw.githubusercontent.com/{repo}/{ref}/skills/{INSTALLER.name}/scripts"
     stage = Path(tempfile.mkdtemp(prefix="auto-space-installer-"))
     staged: dict[str, Path] = {}
-    try:
-        for name in CORE_FILES + WRAPPER_FILES:
-            target = stage / name
-            try:
-                fetch(f"{base}/{name}", target)
-            except Exception as error:  # noqa: BLE001 - optional file or offline
-                log(f"安装器自更新：{name} 拉取失败（{error}）", "WARN")
-                continue
-            if not valid(target):
-                log(f"安装器自更新：{name} 校验未通过，保留本地版本", "WARN")
-                continue
-            staged[name] = target
+    for name in CORE_FILES + WRAPPER_FILES:
+        target = stage / name
+        try:
+            fetch(f"{base}/{name}", target)
+        except Exception as error:  # noqa: BLE001 - optional file or offline
+            log(f"安装器自更新：{name} 拉取失败（{error}）", "WARN")
+            continue
+        if not valid(target):
+            log(f"安装器自更新：{name} 校验未通过，保留本地版本", "WARN")
+            continue
+        staged[name] = target
 
-        missing = [name for name in CORE_FILES if name not in staged]
-        if missing:
-            log(f"安装器自更新：核心脚本缺失（{', '.join(missing)}），本次跳过", "WARN")
-            return
-
-        changed = [name for name, path in staged.items()
-                   if not (SCRIPTS / name).is_file() or digest(SCRIPTS / name) != digest(path)]
-        for name in changed:
-            try:
-                shutil.copyfile(staged[name], SCRIPTS / name)
-            except OSError as error:
-                log(f"安装器自更新：写入 {name} 失败（{error}）", "WARN")
-                return
-        if changed:
-            log(f"安装器已更新：{', '.join(changed)}")
-        else:
-            log("安装器已是最新")
-    finally:
+    missing = [name for name in CORE_FILES if name not in staged]
+    if missing:
+        log(f"安装器自更新：核心脚本缺失（{', '.join(missing)}），本次跳过", "WARN")
         shutil.rmtree(stage, ignore_errors=True)
+        return None, []
+
+    changed = [name for name, path in staged.items()
+               if not (SCRIPTS / name).is_file() or digest(SCRIPTS / name) != digest(path)]
+    if not changed:
+        log("安装器已是最新")
+        shutil.rmtree(stage, ignore_errors=True)
+        return None, []
+    return stage, changed
+
+
+def apply_update(stage: Path, changed: list[str]) -> None:
+    try:
+        for name in changed:
+            shutil.copyfile(stage / name, SCRIPTS / name)
+    except OSError as error:
+        log(f"安装器自更新：写入失败（{error}），下次同步再试", "WARN")
+        return
+    log(f"安装器已更新：{', '.join(changed)}（下次运行生效）")
 
 
 def main() -> int:
@@ -146,12 +155,15 @@ def main() -> int:
     skill_name = args.skill_name or config.get("skillName", "auto-space-ppt")
     asset = args.asset or config.get("asset", "auto-space-ppt-skill.zip")
 
+    stage = None
+    changed: list[str] = []
     if not args.no_self_update:
-        self_update(repo, ref)
+        stage, changed = prepare_update(repo, ref)
 
+    install_script = (stage / "install.py") if stage else (SCRIPTS / "install.py")
     command = [
         sys.executable,
-        str(SCRIPTS / "install.py"),
+        str(install_script),
         "--repo", repo,
         "--ref", ref,
         "--skill-home", skill_home,
@@ -160,13 +172,19 @@ def main() -> int:
         "--schedule", config.get("schedule", "09:10"),
         "--quiet",
     ]
+    # The staged copy lives in a temp dir; keep its state and logs in the real installer dir.
+    env = dict(os.environ, AUTO_SPACE_INSTALLER_DIR=str(INSTALLER))
     log(f"开始同步 {repo}@{ref} → {Path(skill_home) / skill_name}（{asset}）")
-    result = subprocess.run(command)
+    result = subprocess.run(command, env=env)
     if result.returncode != 0:
         log(f"同步失败：install.py 退出码 {result.returncode}", "ERROR")
-        return result.returncode
-    log("同步结束")
-    return 0
+    else:
+        log("同步结束")
+
+    if stage:
+        apply_update(stage, changed)
+        shutil.rmtree(stage, ignore_errors=True)
+    return result.returncode
 
 
 if __name__ == "__main__":

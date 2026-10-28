@@ -35,7 +35,13 @@ USER_AGENT = "auto-space-skill-install"
 
 
 def installer_dir() -> Path:
-    return Path(__file__).resolve().parent.parent
+    """Config, state and logs always live next to the installed installer.
+
+    daily-sync may run a freshly downloaded copy from a temp directory; the env
+    override keeps that copy writing to the real installer directory.
+    """
+    override = os.environ.get("AUTO_SPACE_INSTALLER_DIR")
+    return Path(override).expanduser() if override else Path(__file__).resolve().parent.parent
 
 
 def log(message: str, level: str = "INFO", quiet: bool = False) -> None:

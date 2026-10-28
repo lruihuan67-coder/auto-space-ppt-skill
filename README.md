@@ -130,8 +130,10 @@ python scripts/release.py --push -m "feat: add gallery layout"
 
 ```
 daily-sync（09:10）
-  ├─ 1. 安装器自更新：拉 skills/<installer>/scripts/ 下的 install.py、daily-sync.py 与封装脚本
-  │      → 校验（Python 语法编译 + 非空）→ 哈希不同才替换 → 校验失败保留旧版继续跑
+  ├─ 1. 安装器自更新：拉 skills/<installer>/scripts/ 下的 install.py、daily-sync.py 与封装脚本到临时目录
+  │      → 校验（Python 语法编译 + 非空）
+  │      → 本次同步直接用新副本执行
+  │      → 同步结束后才替换本地脚本（下次运行生效），下载或校验失败则继续用旧版
   ├─ 2. 读 config.json（仓库 / 分支 / 技能目录 / 压缩包名）
   ├─ 3. 下载技能压缩包 → 比 SHA256
   └─ 4. 有变化才备份旧版并覆盖安装
