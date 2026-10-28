@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -31,16 +32,28 @@ WRAPPER_FILES = ("install.ps1", "daily-sync.ps1", "install.sh", "daily-sync.sh")
 def log(message: str, level: str = "INFO") -> None:
     line = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] [{level}] {message}"
     print(line)
-    log_dir = INSTALLER / "logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    with (log_dir / "daily-sync.log").open("a", encoding="utf-8") as handle:
-        handle.write(line + "\n")
+    try:
+        log_dir = INSTALLER / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with (log_dir / "daily-sync.log").open("a", encoding="utf-8") as handle:
+            handle.write(line + "\n")
+    except OSError:
+        # Never let a logging failure abort the sync itself.
+        pass
 
 
-def fetch(url: str, dest: Path) -> None:
-    request = urllib.request.Request(url, headers={"User-Agent": "auto-space-skill-install"})
-    with urllib.request.urlopen(request, timeout=120) as response, dest.open("wb") as handle:
-        shutil.copyfileobj(response, handle)
+def fetch(url: str, dest: Path, attempts: int = 3) -> None:
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": "auto-space-skill-install"})
+            with urllib.request.urlopen(request, timeout=120) as response, dest.open("wb") as handle:
+                shutil.copyfileobj(response, handle)
+            return
+        except Exception as error:  # noqa: BLE001 - retry transient proxy/TLS failures
+            last = error
+            time.sleep(1 + attempt)
+    raise last if last else RuntimeError(f"下载失败：{url}")
 
 
 def valid(path: Path) -> bool:
