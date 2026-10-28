@@ -78,7 +78,11 @@ def valid(path: Path) -> bool:
 
 
 def digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        # Locked or unreadable (antivirus, editor): treat as different, never raise.
+        return ""
 
 
 def prepare_update(repo: str, ref: str) -> tuple[Path | None, list[str]]:
@@ -158,7 +162,11 @@ def main() -> int:
     stage = None
     changed: list[str] = []
     if not args.no_self_update:
-        stage, changed = prepare_update(repo, ref)
+        try:
+            stage, changed = prepare_update(repo, ref)
+        except Exception as error:  # noqa: BLE001 - self-update must never block the sync
+            log(f"安装器自更新：失败（{error}），本次沿用本地版本", "WARN")
+            stage = None
 
     install_script = (stage / "install.py") if stage else (SCRIPTS / "install.py")
     command = [
