@@ -75,16 +75,19 @@ macOS 侧注册的是 `~/Library/LaunchAgents/com.auto-space.auto-space-ppt.sync
 | `-ScheduleTime` / `--schedule` | `09:10` | 每日同步时间 |
 | `-TaskName` / `--task-name` | `AutoSpacePPT-SkillSync` | 计划任务名 |
 | `-Force` / `--force` | 关 | 忽略哈希比对，强制重装 |
+| `-Status` / `--status` | 关 | 只比对本机与远端版本，不安装 |
 
 ## 脚本行为
 
-1. 下载 `https://raw.githubusercontent.com/<repo>/<ref>/auto-space-ppt-skill.zip`（失败回退 `github.com/<repo>/raw/...`）。
-2. 计算 SHA256，与 `installed.json` 比对；一致则跳过（`--force` 可强制）。
-3. 解压校验必须存在 `auto-space-ppt/SKILL.md`。
-4. 旧版本移动到 `<SkillHome>/.backup/auto-space-ppt-<时间戳>`，再复制新版本。
-5. 写入 `installed.json`（repo / ref / sha256 / 时间）与 `config.json`（只登记本技能）。
-6. 可选：复制 `agent/凹凸-PPT.md` 到智能体目录。
-7. 可选：注册每日任务，Windows 用 `Register-ScheduledTask`（允许电池启动、错过补跑），macOS 用 LaunchAgent。
+1. **安装器自更新**：`daily-sync.py` 先从仓库拉取本目录最新的 `install.py` / `daily-sync.py` 与封装脚本，
+   校验通过（Python 语法编译 + 内容非空）且哈希不同才替换本地版本；校验失败则保留旧版并继续。
+2. 下载 `https://raw.githubusercontent.com/<repo>/<ref>/auto-space-ppt-skill.zip`（失败回退 `github.com/<repo>/raw/...`）。
+3. 计算 SHA256，与 `installed.json` 比对；一致则跳过（`--force` 可强制）。
+4. 解压校验必须存在 `auto-space-ppt/SKILL.md`。
+5. 旧版本移动到 `<SkillHome>/.backup/auto-space-ppt-<时间戳>`，再复制新版本。
+6. 写入 `installed.json`（repo / ref / sha256 / 时间）与 `config.json`（只登记本技能）。
+7. 可选：复制 `agent/凹凸-PPT.md` 到智能体目录。
+8. 可选：注册每日任务，Windows 用 `Register-ScheduledTask`（允许电池启动、错过补跑），macOS 用 LaunchAgent。
 
 日志：`<InstallerDir>/logs/install-YYYY-MM.log`、`daily-sync.log`。
 
@@ -102,7 +105,7 @@ macOS 侧注册的是 `~/Library/LaunchAgents/com.auto-space.auto-space-ppt.sync
 ## 每日自动同步
 
 注册后每天在指定时间调用 `daily-sync.ps1`（Windows）或 `daily-sync.sh`（macOS）：
-读取本目录 `config.json` → 调用 `install.py` → 有更新才替换技能目录 → 写日志。
+先自更新安装器 → 读取本目录 `config.json` → 调用 `install.py` → 有更新才替换技能目录 → 写日志。
 
 常用命令：
 
@@ -122,6 +125,9 @@ tail -n 20 ~/.agents/skills/auto-space-ppt-install/logs/daily-sync.log
 ## 校验安装结果
 
 ```powershell
+# 一条命令看本机与远端版本
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\scripts\install.ps1" -Status
+
 Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ppt\SKILL.md"
 Test-Path "$env:USERPROFILE\.agents\skills\auto-space-ppt\assets\starter.zip"
 Get-Content  "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\installed.json"
@@ -129,8 +135,7 @@ Get-Content  "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\installed.j
 
 ```bash
 # macOS
-ls ~/.agents/skills/auto-space-ppt/SKILL.md ~/.agents/skills/auto-space-ppt/assets/starter.zip
-cat ~/.agents/skills/auto-space-ppt-install/installed.json
+bash "$HOME/.agents/skills/auto-space-ppt-install/scripts/install.sh" --status
 launchctl print "gui/$(id -u)/com.auto-space.auto-space-ppt.sync" | head -20
 ```
 

@@ -6,7 +6,8 @@ param(
   [string]$Ref,
   [string]$SkillHome,
   [string]$SkillName,
-  [string]$AssetName
+  [string]$AssetName,
+  [switch]$NoSelfUpdate
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,6 +21,7 @@ if ($Ref) { $argv += @("--ref", $Ref) }
 if ($SkillHome) { $argv += @("--skill-home", $SkillHome) }
 if ($SkillName) { $argv += @("--skill-name", $SkillName) }
 if ($AssetName) { $argv += @("--asset", $AssetName) }
+if ($NoSelfUpdate) { $argv += "--no-self-update" }
 
 & $python.Source @argv
 exit $LASTEXITCODE

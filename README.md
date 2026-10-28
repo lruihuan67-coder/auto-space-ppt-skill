@@ -126,4 +126,47 @@ python scripts/release.py --push -m "feat: add gallery layout"
 
 推送后，所有装过该技能的机器会在下一次每日同步时凭 SHA256 变化自动更新，无需逐台操作。
 
-注意：**安装器脚本本身不会自动更新**（它是更新的执行者）。安装器有改动时，其他机器需要按上文「安装」块重取一次脚本，再跑一次 `install` 重新注册任务。
+## 每日同步做了什么
+
+```
+daily-sync（09:10）
+  ├─ 1. 安装器自更新：拉 skills/<installer>/scripts/ 下的 install.py、daily-sync.py 与封装脚本
+  │      → 校验（Python 语法编译 + 非空）→ 哈希不同才替换 → 校验失败保留旧版继续跑
+  ├─ 2. 读 config.json（仓库 / 分支 / 技能目录 / 压缩包名）
+  ├─ 3. 下载技能压缩包 → 比 SHA256
+  └─ 4. 有变化才备份旧版并覆盖安装
+```
+
+安装器自更新解决了“修复只落在新机器上”的问题：改 `install.py` 或任务注册逻辑，只需 push，已装机器第二天自动获得。
+
+## 版本自检
+
+任意一台机器上执行一条命令，即可看到本机版本、远端版本、是否需要更新：
+
+```powershell
+# Windows
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\scripts\install.ps1" -Status
+```
+
+```bash
+# macOS
+bash "$HOME/.agents/skills/auto-space-ppt-install/scripts/install.sh" --status
+```
+
+输出示例：
+
+```
+技能目录   : ~/.agents/skills/auto-space-ppt
+本机版本   : 2D4E35E51A82  更新于 2026-10-28T15:39:14+08:00
+远端版本   : 1B3A0E5B0002
+状态       : 有新版，下次每日同步会自动安装
+每日时间   : 09:10
+```
+
+## 无法完全自动化的部分
+
+| 情况 | 表现 | 兜底 |
+| --- | --- | --- |
+| 09:10 时机器关机 | Windows 下次开机补跑；macOS 关机期间错过的不会补 | 开机后手动跑一次 `daily-sync`，或用 `--status` 确认 |
+| 技能已被替换但会话还开着 | 当前会话仍用旧内容 | 新开会话（opencode 需重启 SpaceAgents） |
+| 旧版安装器首次升级 | 老脚本没有自更新能力 | 按上文「安装」块重取一次脚本，之后即可自维护 |

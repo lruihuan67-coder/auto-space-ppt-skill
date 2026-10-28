@@ -28,6 +28,9 @@ from datetime import datetime
 from pathlib import Path
 
 DEFAULT_REPO = "lruihuan67-coder/auto-space-ppt-skill"
+DEFAULT_ASSET = "auto-space-ppt-skill.zip"
+DEFAULT_SKILL = "auto-space-ppt"
+DEFAULT_TASK = "AutoSpacePPT-SkillSync"
 USER_AGENT = "auto-space-skill-install"
 
 
@@ -147,24 +150,73 @@ def register_schedule(task_name: str, skill_name: str, daily_script: Path, sched
         log(f"当前平台 {sys.platform} 不支持自动计划任务，请自行调度 {daily_script}", "WARN", quiet)
 
 
+def show_status(args, quiet: bool) -> int:
+    """Print the installed archive hash next to the one GitHub currently serves."""
+    state = read_json(installer_dir() / "installed.json")
+    config = read_json(installer_dir() / "config.json")
+    skill_home = Path(args.skill_home or config.get("skillHome") or Path.home() / ".agents" / "skills").expanduser()
+    skill_name = args.skill_name or config.get("skillName") or DEFAULT_SKILL
+    asset = args.asset or config.get("asset") or DEFAULT_ASSET
+    repo = args.repo or config.get("repo") or DEFAULT_REPO
+    ref = args.ref or config.get("ref") or "main"
+    schedule = config.get("schedule", "—")
+    target = skill_home / skill_name
+
+    local = state.get("sha256") or "未安装"
+    updated = state.get("updated") or "—"
+    remote = "获取失败"
+    error = ""
+    with tempfile.TemporaryDirectory(prefix="auto-space-status-") as tmp:
+        remote_zip = Path(tmp) / asset
+        try:
+            try:
+                download(f"https://raw.githubusercontent.com/{repo}/{ref}/{asset}", remote_zip, quiet)
+            except Exception:  # noqa: BLE001 - fall back to the github.com URL
+                download(f"https://github.com/{repo}/raw/{ref}/{asset}", remote_zip, quiet)
+            remote = sha256(remote_zip)
+        except Exception as exc:  # noqa: BLE001 - offline or blocked
+            error = str(exc)
+
+    if not (target / "SKILL.md").is_file():
+        verdict = "未安装（或技能目录被清理），下次同步会重装"
+    elif remote == "获取失败":
+        verdict = f"无法联网比对（{error}）"
+    elif local[:12] == remote[:12]:
+        verdict = "已是最新"
+    else:
+        verdict = "有新版，下次每日同步会自动安装"
+
+    print(f"仓库       : {repo}@{ref}（{asset}）")
+    print(f"技能目录   : {target}")
+    print(f"本机版本   : {local[:12] if local != '未安装' else local}  更新于 {updated}")
+    print(f"远端版本   : {remote[:12] if remote != '获取失败' else '—'}")
+    print(f"状态       : {verdict}")
+    print(f"每日时间   : {schedule}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Install an Auto Space skill from a GitHub archive.")
     parser.add_argument("--repo", default=DEFAULT_REPO, help="owner/repo on GitHub")
     parser.add_argument("--ref", default="main")
-    parser.add_argument("--asset", default="auto-space-ppt-skill.zip")
-    parser.add_argument("--skill-name", default="auto-space-ppt")
+    parser.add_argument("--asset", default=DEFAULT_ASSET)
+    parser.add_argument("--skill-name", default=DEFAULT_SKILL)
     parser.add_argument("--skill-home", default=str(Path.home() / ".agents" / "skills"))
     parser.add_argument("--agent-dir", default=str(Path.cwd() / ".opencode" / "agent"))
     parser.add_argument("--with-agent", action="store_true", help="deploy the agent markdown template")
     parser.add_argument("--with-schedule", action="store_true", help="register the daily sync job")
     parser.add_argument("--schedule", default="09:10", help="daily run time, HH:MM")
-    parser.add_argument("--task-name", default="AutoSpacePPT-SkillSync")
+    parser.add_argument("--task-name", default=DEFAULT_TASK)
     parser.add_argument("--source-zip", help="install from a local archive instead of GitHub")
     parser.add_argument("--force", action="store_true", help="reinstall even when the hash matches")
+    parser.add_argument("--status", action="store_true", help="compare the installed version with GitHub")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
 
     quiet = args.quiet
+    if args.status:
+        return show_status(args, quiet)
+
     url = ""
     if not args.source_zip:
         if not re.fullmatch(r"[A-Za-z0-9._-]+/[A-Za-z0-9._-]+", args.repo or ""):
@@ -244,7 +296,7 @@ def main() -> int:
             if not agent_src.is_file() and url:
                 agent_url = (
                     f"https://raw.githubusercontent.com/{args.repo}/{args.ref}/"
-                    f"skills/auto-space-ppt-install/agent/{urllib.parse.quote('凹凸-PPT.md')}"
+                    f"skills/{installer_dir().name}/agent/{urllib.parse.quote('凹凸-PPT.md')}"
                 )
                 log(f"本地无智能体模板，从 {agent_url} 下载", quiet=quiet)
                 agent_src = tmp_dir / "agent.md"
