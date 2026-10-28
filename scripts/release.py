@@ -103,15 +103,30 @@ def git(repo: Path, *args: str, capture: bool = False) -> subprocess.CompletedPr
 def publish(repo: Path, zip_name: str, message: str | None, digest: str) -> None:
     git(repo, "add", "-A")
     staged = git(repo, "status", "--porcelain", capture=True).stdout.strip()
-    if not staged:
-        print("仓库没有变更，跳过提交")
+    if staged:
+        print("本次提交包含：")
+        for line in staged.splitlines():
+            print(f"  {line}")
+        git(repo, "commit", "-m", message or f"chore: publish {zip_name} ({digest[:12]})")
+    else:
+        print("工作区没有变更，跳过提交")
+
+    ahead = git(repo, "rev-list", "--count", "origin/main..HEAD", capture=True).stdout.strip()
+    if ahead != "0":
+        git(repo, "push", "origin", "HEAD")
+        print(f"已推送 {ahead} 个提交到 origin")
+
+    try:
+        git(repo, "fetch", "origin")
+    except subprocess.CalledProcessError:
+        print("⚠ 无法 fetch 校验远端（网络问题），请手动执行 git ls-remote origin HEAD 确认")
         return
-    print("本次提交包含：")
-    for line in staged.splitlines():
-        print(f"  {line}")
-    git(repo, "commit", "-m", message or f"chore: publish {zip_name} ({digest[:12]})")
-    git(repo, "push", "origin", "HEAD")
-    print("已提交并推送到 origin")
+    head = git(repo, "rev-parse", "HEAD", capture=True).stdout.strip()
+    remote = git(repo, "rev-parse", "origin/main", capture=True).stdout.strip()
+    if head == remote:
+        print(f"远端已确认：{remote[:12]}")
+    else:
+        print(f"⚠ 远端与本地不一致：本地 {head[:12]} / 远端 {remote[:12]}，请检查推送")
 
 
 def local_install(repo: Path, archive: Path, skill_name: str) -> None:
