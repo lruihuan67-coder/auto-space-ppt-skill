@@ -23,6 +23,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -100,6 +101,18 @@ def git(repo: Path, *args: str, capture: bool = False) -> subprocess.CompletedPr
     return subprocess.run(["git", *args], cwd=repo, check=True, capture_output=capture, text=capture)
 
 
+def git_retry(repo: Path, *args: str, attempts: int = 4, delay: int = 3) -> subprocess.CompletedProcess:
+    """Git over a flaky proxy often fails the first time; retry before giving up."""
+    last: subprocess.CalledProcessError | None = None
+    for attempt in range(attempts):
+        try:
+            return git(repo, *args, capture=True)
+        except subprocess.CalledProcessError as error:
+            last = error
+            time.sleep(delay * (attempt + 1))
+    raise last if last else RuntimeError("git 命令失败")
+
+
 def publish(repo: Path, zip_name: str, message: str | None, digest: str) -> None:
     git(repo, "add", "-A")
     staged = git(repo, "status", "--porcelain", capture=True).stdout.strip()
@@ -113,11 +126,15 @@ def publish(repo: Path, zip_name: str, message: str | None, digest: str) -> None
 
     ahead = git(repo, "rev-list", "--count", "origin/main..HEAD", capture=True).stdout.strip()
     if ahead != "0":
-        git(repo, "push", "origin", "HEAD")
-        print(f"已推送 {ahead} 个提交到 origin")
+        try:
+            git_retry(repo, "push", "origin", "HEAD")
+        except subprocess.CalledProcessError as error:
+            print(f"⚠ 推送命令返回错误（{error.returncode}），继续用远端校验确认结果")
+        else:
+            print(f"已推送 {ahead} 个提交到 origin")
 
     try:
-        git(repo, "fetch", "origin")
+        git_retry(repo, "fetch", "origin")
     except subprocess.CalledProcessError:
         print("⚠ 无法 fetch 校验远端（网络问题），请手动执行 git ls-remote origin HEAD 确认")
         return
