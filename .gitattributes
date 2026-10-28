@@ -1,0 +1,12 @@
+# Shell / Python scripts must stay LF so they run on macOS and Linux.
+*.sh text eol=lf
+*.py text eol=lf
+*.ps1 text eol=crlf
+*.md text eol=lf
+
+# Binary assets
+*.zip binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
