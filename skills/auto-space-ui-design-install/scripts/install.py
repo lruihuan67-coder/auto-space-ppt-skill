@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 import zipfile
@@ -54,11 +55,20 @@ def log(message: str, level: str = "INFO", quiet: bool = False) -> None:
         handle.write(line + "\n")
 
 
-def download(url: str, dest: Path, quiet: bool = False) -> None:
+def download(url: str, dest: Path, quiet: bool = False, attempts: int = 3) -> None:
     log(f"下载 {url}", quiet=quiet)
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=300) as response, dest.open("wb") as handle:
-        shutil.copyfileobj(response, handle)
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(request, timeout=300) as response, dest.open("wb") as handle:
+                shutil.copyfileobj(response, handle)
+            return
+        except Exception as error:  # noqa: BLE001 - proxies drop TLS handshakes intermittently
+            last = error
+            if attempt + 1 < attempts:
+                time.sleep(1 + attempt)
+    raise last if last else RuntimeError(f"下载失败：{url}")
 
 
 def sha256(path: Path) -> str:
@@ -284,7 +294,13 @@ def main() -> int:
             except Exception as error:  # noqa: BLE001 - fall back to the github.com URL
                 fallback = f"https://github.com/{args.repo}/raw/{args.ref}/{args.asset}"
                 log(f"raw.githubusercontent 失败（{error}），回退 {fallback}", "WARN", quiet)
-                download(fallback, zip_path, quiet)
+                try:
+                    download(fallback, zip_path, quiet)
+                except Exception as retry_error:  # noqa: BLE001
+                    if args.ensure:
+                        log(f"更新失败（{retry_error}），按本机现有版本继续", "WARN", quiet)
+                        return 0
+                    raise RuntimeError(f"下载失败：{retry_error}") from retry_error
 
         digest = sha256(zip_path)
         size_mb = round(zip_path.stat().st_size / (1 << 20), 2)

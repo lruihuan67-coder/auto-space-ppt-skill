@@ -81,7 +81,7 @@ macOS 侧注册的是 `~/Library/LaunchAgents/com.auto-space.auto-space-ppt.sync
 ## 开工前自检（推荐）
 
 ```powershell
-# Windows：约 1 秒，无新版时不会下载 12 MB 压缩包
+# Windows：无新版时只拉几十字节的版本清单，不下载 12 MB 压缩包
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\.agents\skills\auto-space-ppt-install\scripts\install.ps1" -Ensure
 ```
 
