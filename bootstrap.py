@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 import zipfile
 from datetime import datetime, timezone
@@ -38,15 +39,23 @@ def log(msg: str) -> None:
     print(msg, flush=True)
 
 
-def http_get(url: str, dest: Path | None = None, timeout: int = 180) -> bytes | None:
-    req = urllib.request.Request(url, headers={"User-Agent": "auto-space-bootstrap"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = resp.read()
-    if dest is not None:
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(data)
-        return None
-    return data
+def http_get(url: str, dest: Path | None = None, timeout: int = 180, retries: int = 3) -> bytes | None:
+    last = None
+    for attempt in range(1, retries + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "auto-space-bootstrap"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = resp.read()
+            if dest is not None:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(data)
+                return None
+            return data
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            if attempt < retries:
+                time.sleep(2)
+    raise last  # type: ignore[misc]
 
 
 def sha256_file(path: Path) -> str:
@@ -154,12 +163,15 @@ def verify(bundle: Path) -> int:
 def install(workspace: Path, bundle_id: str, version: str | None, force: bool, quiet: bool) -> int:
     bundle = workspace / bundle_id
     target_version = resolve_version(version)
+    cur = read_current(bundle)
+    if cur and target_version == "v0.0.0" and cur.get("version"):
+        target_version = cur["version"]
+        log(f"版本探测失败，沿用已安装版本：{target_version}")
     log(f"目标版本：{target_version}")
 
-    cur = read_current(bundle)
     if cur and not force:
-        runtime = Path(cur.get("runtime_root", ""))
-        if cur.get("version") == target_version and runtime.is_dir() and (runtime / "SKILL.md").exists():
+        root = Path(cur.get("skill_root") or cur.get("runtime_root", ""))
+        if cur.get("version") == target_version and root.is_dir() and (root / "SKILL.md").exists():
             log(f"已安装且完整（{target_version}），跳过下载。")
             return 0
 
