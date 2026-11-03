@@ -41,3 +41,14 @@ UI 技能在独立仓库 `auto-space-ui-design-skill`，由它自己的索引 sk
 ## 发布新版本
 
 替换 `auto-space-ppt-skill.zip` 与 `skills/auto-space-ppt/` 后提交推送，第二天的定时任务自动装上。
+
+## 引导器安装（推荐，含版本指针与校验）
+
+```powershell
+python bootstrap.py --workspace <工作区根目录>          # 安装 / 更新到最新 tag
+python bootstrap.py --workspace <工作区根目录> --verify  # 只校验
+```
+
+- 只从本仓库官方地址下载 `auto-space-ppt-skill.zip`，按 `SHA256SUMS` 校验，不一致即停止
+- 安装到 `<工作区>/.spaceagents/plugins/auto-space-ppt/`，版本目录由 `current.json` 指针指向，不写死
+- 旧版本保留在 `runtime/<旧版本>.old`，可回滚
