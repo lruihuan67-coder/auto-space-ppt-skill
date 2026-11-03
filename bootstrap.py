@@ -130,12 +130,12 @@ def verify(bundle: Path) -> int:
     if not cur:
         log("未安装：缺少 current.json")
         return 2
-    runtime = Path(cur.get("runtime_root", ""))
+    root = Path(cur.get("skill_root") or cur.get("runtime_root", ""))
     failed = []
-    if not runtime.is_dir():
-        failed.append(f"runtime_root 不存在：{runtime}")
+    if not root.is_dir():
+        failed.append(f"技能目录不存在：{root}")
     for rel in VERIFY_FILES:
-        target = runtime / rel
+        target = root / rel
         if not target.exists():
             failed.append(f"缺少 {rel}")
         elif target.stat().st_size == 0:
@@ -145,8 +145,8 @@ def verify(bundle: Path) -> int:
         for item in failed:
             log(f"  - {item}")
         return 1
-    log(f"校验通过：{SKILL_NAME} {cur.get('version')} @ {runtime}")
-    log(f"  入口：{runtime / 'SKILL.md'}")
+    log(f"校验通过：{SKILL_NAME} {cur.get('version')} @ {root}")
+    log(f"  入口：{root / 'SKILL.md'}")
     log(f"  CLI：{cur.get('cli')}")
     return 0
 
@@ -196,8 +196,8 @@ def install(workspace: Path, bundle_id: str, version: str | None, force: bool, q
             runtime.rename(backup)
         staging.rename(runtime)
 
-        cli_target = runtime / CLI_ENTRY
-        cli = f"python {cli_target}" if CLI_ENTRY else f"python {Path(__file__).name} --verify"
+        cli_target = runtime / SKILL_NAME / CLI_ENTRY
+        cli = f"python {cli_target}" if CLI_ENTRY else "python bootstrap.py --verify"
         data = {
             "version": target_version,
             "runtime_root": str(runtime),
