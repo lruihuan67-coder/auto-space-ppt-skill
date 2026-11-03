@@ -108,7 +108,7 @@ def expected_sha(version: str) -> str | None:
         txt = http_get(f"https://raw.githubusercontent.com/{REPO}/{version}/SHA256SUMS")
     except Exception:
         return None
-    for line in (txt or b"").decode("utf-8", "replace").splitlines():
+    for line in (txt or b"").decode("utf-8-sig", "replace").splitlines():
         parts = line.split()
         if len(parts) >= 2 and parts[-1].lstrip("*") == ASSET:
             return parts[0].lower()
